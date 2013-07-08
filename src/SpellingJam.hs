@@ -1,32 +1,53 @@
 module Main where
 
-import Data.List (words)
+import Data.List (words, splitAt)
 import qualified Data.Map as M
 import qualified Data.Set as S
+import System.IO (hFlush, stdout)
+import Control.Monad (forever)
 
 type FrequencyMap = M.Map String Integer
 type Word = String
 type Edit = String
-type Edits = S.Set Edit
+type WordPart = String
+type Edits = S.Set Word
 
 train :: [Word] -> FrequencyMap
-
-nWords :: Word -> FrequencyMap
+train words = M.fromListWith (+) oneTuples
+    where oneTuples = [(word, 1) | word <- words]
 
 alphabet :: [Char]
 alphabet = ['a'..'z']
 
 edits1 :: Word -> Edits
+edits1 word = S.fromList $ concat [deletes, transposes, replaces, inserts]
+    where s = [splitAt i word | i <- [0..length word]]
+          deletes = [a ++ tail b | (a, b) <- s, not $ null b]
+          transposes = [a ++ [b !! 1] ++ [b !! 0] ++ drop 2 b | (a, b) <- s, not $ null $ drop 1 b]
+          replaces = [a ++ [c] ++ drop 1 b | (a, b) <- s, c <- alphabet, not $ null b]
+          inserts = [a ++ [c] ++ b | (a, b) <- s, c <- alphabet]
 
 knownEdits2 :: Word -> Edits
+knownEdits2 word = S.fromList $ concatMap S.toList edits
+    where edits = [edits1 e1 | e1 <- (S.toList $ edits1 word)]
 
-known :: Word -> Edits
+nWords text = train . words $ text
 
-correct :: Word -> Edit
+--known :: FrequencyMap -> [Word] -> Edits
+--known wordMap words = S.fromList $ [word <- ]
+--
+--correct :: FrequencyMap -> Word -> Edit
+--correct wordMap word = (S.fromList [word])
 
 main :: IO ()
 main = do
-    putStr "word> "
-    word <- getLine
-    putStrLn . correct $ word
+    bigData <- readFile "big.txt"
+    let bigDataNWords = nWords bigData
+    forever $ do
+        putStr "word> "
+        hFlush stdout
+        word <- getLine
+        putStrLn . show $ knownEdits2 word
+    return ()
+    --putStrLn . correct $ word
 
