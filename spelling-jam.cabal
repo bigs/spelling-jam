@@ -18,6 +18,5 @@ executable spelling-jam
   main-is: src/SpellingJam.hs
   -- other-modules:       
   build-depends:
-    base ==4.5.*,
-    containers ==0.4.2.1
-                       
+    base >=4.5,
+    containers >=0.4
