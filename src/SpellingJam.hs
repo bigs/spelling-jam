@@ -1,6 +1,6 @@
 module Main where
 
-import Data.List (words, splitAt)
+import Data.List (words, splitAt, sortBy)
 import qualified Data.Map as M
 import qualified Data.Set as S
 import System.IO (hFlush, stdout)
@@ -31,23 +31,40 @@ knownEdits2 :: Word -> Edits
 knownEdits2 word = S.fromList $ concatMap S.toList edits
     where edits = [edits1 e1 | e1 <- (S.toList $ edits1 word)]
 
+nWords :: String -> FrequencyMap
 nWords text = train . words $ text
 
---known :: FrequencyMap -> [Word] -> Edits
---known wordMap words = S.fromList $ [word <- ]
---
---correct :: FrequencyMap -> Word -> Edit
---correct wordMap word = (S.fromList [word])
+known :: FrequencyMap -> Edits -> Edits
+known wordMap words = S.fromList $ [word | word <- S.toList words, M.member word wordMap]
+
+correct :: (Edits -> Edits) -> Word -> [Word]
+correct knownFn word = case (S.toList $ knownFn $ S.fromList [word]) of
+    [] -> case (S.toList $ knownFn $ edits1 word) of
+        [] -> case (S.toList $ knownEdits2 word) of
+            [] -> [word]
+            x -> x
+        x -> x
+    x -> x
+
+compareTuple (_, i) (_, j) = if i < j
+                             then LT
+                             else if i == j
+                             then EQ
+                             else GT
+
+orderResults :: FrequencyMap -> [Word] -> [Word]
+orderResults freqMap results = map (\(x, _) -> x) $ reverse $ sortBy compareTuple $ map (\x -> (x, M.findWithDefault 1 x freqMap)) results
 
 main :: IO ()
 main = do
-    bigData <- readFile "big.txt"
+    bigData <- readFile "data/big.txt"
     let bigDataNWords = nWords bigData
+    let known' = known bigDataNWords
     forever $ do
         putStr "word> "
         hFlush stdout
         word <- getLine
-        putStrLn . show $ knownEdits2 word
+        putStrLn . show $ orderResults bigDataNWords $ correct known' word
     return ()
     --putStrLn . correct $ word
 
